@@ -1,4 +1,4 @@
-# Confluence Skill Installation Guide
+# Confluence Data Center Skill Installation Guide
 
 ## ✅ Installation Complete!
 
@@ -18,12 +18,10 @@ The Confluence skill has been installed to:
 ### Reference Guides (references/)
 - **wiki_markup_guide.md** - Complete Confluence Wiki Markup syntax reference
 - **conversion_guide.md** - Detailed Markdown ↔ Wiki Markup conversion rules
-- **mark_tool_guide.md** - Comprehensive guide to the mark CLI tool
 
 ### Utility Scripts (scripts/)
 - **convert_markdown_to_wiki.py** - Convert Markdown to Confluence Wiki Markup
 - **render_mermaid.py** - Render Mermaid diagrams to PNG/SVG images
-- **generate_mark_metadata.py** - Add mark-compatible metadata to Markdown files
 
 ### Examples (examples/)
 - **sample-confluence-page.md** - Example Markdown file demonstrating all features
@@ -60,11 +58,6 @@ Claude will automatically use the Confluence skill!
 ### 3. Install Optional Tools
 
 For full functionality, install these optional tools:
-
-#### mark CLI (for Git → Confluence sync)
-```bash
-brew install kovetskiy/mark/mark
-```
 
 #### Mermaid CLI (for diagram rendering)
 ```bash
@@ -105,34 +98,31 @@ python ~/.claude/skills/confluence/scripts/convert_markdown_to_wiki.py input.md 
 python ~/.claude/skills/confluence/scripts/render_mermaid.py diagram.mmd output.png
 ```
 
-#### Add mark Metadata
-```bash
-python ~/.claude/skills/confluence/scripts/generate_mark_metadata.py file.md \
-  --space DEV \
-  --title "Page Title" \
-  --labels api,documentation
-```
-
 ## ⚙️ Configuration
 
-### Atlassian MCP Server
+### Atlassian MCP Server (Data Center)
 
-Ensure your Atlassian MCP server is configured with:
+Ensure your Atlassian MCP server is configured for Confluence Data Center:
 
-1. **Confluence instance URL**
-2. **Authentication credentials** (API token)
-3. **Appropriate permissions** for the spaces you want to manage
+1. **MCP Server Name**: `compasify-confluence-dc`
+2. **NPM Package**: `@compasify/confluence-dc`
+3. **Authentication**: Uses Personal Access Tokens (PAT).
+4. **Permissions**: Appropriate permissions for the spaces you want to manage.
 
-### mark CLI Configuration (Optional)
+#### PAT Generation
+1. Go to your Confluence DC instance.
+2. Click your profile icon and select **Settings**.
+3. Go to **Personal Access Tokens** in the left sidebar.
+4. Click **Create token**.
+5. Give it a name and click **Create**.
+6. Copy the token immediately as it won't be shown again.
 
-If using the mark tool, create `~/.config/mark`:
+#### Configuration Environment Variables
+Add these to your MCP configuration:
+- `CONFLUENCE_HOST` (or `CONFLUENCE_API_BASE_PATH`): The base URL of your DC instance.
+- `CONFLUENCE_API_TOKEN`: Your generated Personal Access Token (PAT).
 
-```toml
-username = "your-email@example.com"
-password = "your-api-token"
-base_url = "https://your-instance.atlassian.net/wiki"
-space = "DEV"
-```
+*Note: Unlike Confluence Cloud, Data Center uses PAT authentication only — no email/username is required.*
 
 ## 🎯 Common Tasks
 
@@ -176,18 +166,6 @@ Claude:
 4. Notes any elements that couldn't be converted
 ```
 
-### Task 4: Sync Git Repository to Confluence
-
-```
-You: "Help me sync this docs/ folder to Confluence using mark"
-
-Claude:
-1. Checks for mark installation
-2. Adds metadata headers to Markdown files
-3. Provides mark command to run
-4. Or executes sync directly
-```
-
 ## 📖 Learning Resources
 
 ### Start Here
@@ -198,7 +176,6 @@ Claude:
 ### Deep Dives
 1. **references/wiki_markup_guide.md** - Learn Wiki Markup syntax
 2. **references/conversion_guide.md** - Understand conversion rules
-3. **references/mark_tool_guide.md** - Master the mark CLI
 
 ## 🔧 Troubleshooting
 
@@ -213,12 +190,13 @@ If Claude doesn't seem to recognize Confluence tasks:
 
 ### MCP Tools Not Available
 
-If Confluence MCP tools aren't working:
+If Confluence DC MCP tools aren't working:
 
-1. Check Atlassian MCP server is running
-2. Verify credentials are configured
-3. Test connection manually
-4. Review MCP server logs
+1. Check that the `compasify-confluence-dc` MCP server is running.
+2. Verify your PAT (`CONFLUENCE_API_TOKEN`) is correct.
+3. Verify your host URL (`CONFLUENCE_HOST`) is accessible.
+4. Test connection manually.
+5. Review MCP server logs.
 
 ### Scripts Not Executing
 
@@ -244,8 +222,7 @@ If Python scripts fail:
 - **references/** - Detailed guides
 
 ### External Resources
-- Atlassian MCP: Check your MCP server documentation
-- mark tool: https://github.com/kovetskiy/mark
+- Compasify Confluence DC MCP: [compasify/confluence-dc on GitHub](https://github.com/compasify/confluence-dc)
 - Mermaid: https://mermaid.js.org/
 
 ## 🎉 You're Ready!

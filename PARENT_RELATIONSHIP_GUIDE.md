@@ -69,7 +69,7 @@ parent:
 ```bash
 python3 upload_confluence.py \
   --id 218695766 \
-  --env-file /path/to/.env.jira \
+  --env-file /path/to/.env.confluence \
   PDR_Data_Flows.md
 ```
 
@@ -369,7 +369,7 @@ python3 upload_confluence.py \
   my_page.md
 
 # 3. Validate parent relationship via MCP
-# (Use mcp__atlassian-evinova__confluence_get_page)
+# (Use confluence_getContent to verify parent via MCP)
 ```
 
 **Key**: Always validate after moves in critical migrations.
@@ -509,7 +509,7 @@ python3 upload_confluence.py page.md  # Safe: frontmatter is current
 
 ### Code Changes
 
-**File**: `/Users/richardhightower/.claude/skills/confluence/scripts/upload_confluence.py`
+**File**: `scripts/upload_confluence.py`
 
 **Added CLI Arguments**:
 ```python
@@ -646,5 +646,5 @@ python3 upload_confluence.py --id 646053890 --parent-id 763331351 --ignore-front
 ---
 
 **Document Created**: 2025-11-11
-**Author**: Evinova Agent Documentation
+**Author**: Confluence DC Skill Documentation
 **Related**: PDR Migration Phase 2-3 Content Restoration Issue

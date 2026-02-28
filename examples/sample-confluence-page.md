@@ -173,6 +173,7 @@ All of these elements can be converted to Confluence Wiki Markup using the conve
 - Convert this file to Wiki Markup using `convert_markdown_to_wiki.py`
 - Render Mermaid diagrams using `render_mermaid.py`
 - Add mark metadata using `generate_mark_metadata.py`
+- Upload to Confluence using `upload_confluence.py` or `upload_confluence_v2.py`
 - Upload to Confluence using the Atlassian MCP tools
 
 ---

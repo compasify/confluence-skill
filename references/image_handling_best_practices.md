@@ -334,7 +334,7 @@ Here's a screenshot of the main dashboard:
 python3 ~/.claude/skills/confluence/scripts/upload_confluence_v2.py \
     document.md \
     --id 780369923 \
-    --env-file /path/to/.env.jira
+    --env-file /path/to/.env.confluence
 ```
 
 **What Happens:**
@@ -391,8 +391,8 @@ python3 ~/.claude/skills/confluence/scripts/upload_confluence_v2.py \
 
 **DO NOT USE MCP FOR CONFLUENCE PAGE UPLOADS.**
 
-- ❌ `mcp__atlassian-evinova__confluence_update_page` - Has size limits
-- ❌ `mcp__atlassian-evinova__confluence_create_page` - Has size limits
+- ❌ `mcp__compasify-confluence-dc__confluence_update_page` - Has size limits
+- ❌ `mcp__compasify-confluence-dc__confluence_create_page` - Has size limits
 
 **Use REST API Instead:**
 - ✅ `upload_confluence_v2.py` - No size limits, handles large documents

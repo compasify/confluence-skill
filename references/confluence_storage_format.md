@@ -313,3 +313,44 @@ result = confluence.update_page(
 - [Confluence Storage Format Documentation](https://confluence.atlassian.com/doc/confluence-storage-format-790796544.html)
 - [md2cf GitHub Repository](https://github.com/iamjackg/md2cf)
 - [Atlassian Python API](https://atlassian-python-api.readthedocs.io/)
+
+## Data Center Specific Notes
+
+### JSON Language Not Supported
+
+⚠️ **Critical:** Confluence Data Center does NOT support `json` as a language parameter in code blocks. This is a Cloud-only feature.
+
+**❌ Wrong (DC will error):**
+```xml
+<ac:structured-macro ac:name="code">
+  <ac:parameter ac:name="language">json</ac:parameter>
+  <ac:plain-text-body><![CDATA[
+{"key": "value"}
+  ]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+**✅ Correct (DC compatible):**
+```xml
+<ac:structured-macro ac:name="code">
+  <ac:parameter ac:name="language">javascript</ac:parameter>
+  <ac:plain-text-body><![CDATA[
+{"key": "value"}
+  ]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+### DC vs Cloud Storage Format
+
+The XML-based storage format is **identical between Data Center and Cloud**. Both use the same `<ac:structured-macro>`, `<ac:image>`, `<ri:attachment>`, and other elements.
+
+**Key Difference:** Code block language support is restricted in DC. Use these instead:
+- `javascript` instead of `json`
+- `xml`, `yaml`, `python`, `java`, `sql`, etc. (all standard languages supported)
+
+### Migration from Cloud to DC
+
+If migrating storage format content from Cloud to DC:
+1. Replace any `<ac:parameter ac:name="language">json</ac:parameter>` with `javascript`
+2. No other changes needed — storage format is otherwise identical
+3. All attachment references (`<ri:attachment>`) work the same way

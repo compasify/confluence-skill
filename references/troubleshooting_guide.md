@@ -31,7 +31,7 @@ Error: MCP request failed: content exceeds maximum size
 Use REST API instead:
 ```bash
 # ❌ Don't use MCP
-# mcp__atlassian-evinova__confluence_update_page
+# mcp__compasify-confluence-dc__confluence_update_page
 
 # ✅ Use REST API via upload script
 python3 ~/.claude/skills/confluence/scripts/upload_confluence_v2.py \
@@ -282,22 +282,22 @@ ERROR: Authentication failed
 
    # ✅ Specify correct path
    python3 upload_confluence_v2.py document.md --id 123 \
-       --env-file /Users/you/clients/evinova/.env.jira
+       --env-file /path/to/.env.confluence
    ```
 
 **Solution:**
 
 **Check 1: Verify credentials file exists**
 ```bash
-ls -la /Users/you/clients/evinova/.env.jira
+ls -la /path/to/.env.confluence
 ```
 
 **Check 2: Verify credentials format**
 ```bash
-# .env.jira should contain:
-CONFLUENCE_USERNAME=your.email@company.com
-CONFLUENCE_API_TOKEN=your_api_token_here
-CONFLUENCE_BASE_URL=https://yourcompany.atlassian.net/wiki
+# .env.confluence should contain:
+CONFLUENCE_HOST=https://confluence.yourcompany.com
+CONFLUENCE_API_TOKEN=your_personal_access_token_here
+CONFLUENCE_HOST=https://confluence.yourcompany.com
 ```
 
 **Check 3: Test credentials**
@@ -305,15 +305,15 @@ CONFLUENCE_BASE_URL=https://yourcompany.atlassian.net/wiki
 # Use confluence_auth.py to test
 python3 -c "
 from confluence_auth import get_confluence_client
-client = get_confluence_client(env_file='/path/to/.env.jira')
+client = get_confluence_client(env_file='/path/to/.env.confluence')
 print('✅ Authentication successful!')
 "
 ```
 
-**Generate New API Token:**
-1. Go to: https://id.atlassian.com/manage-profile/security/api-tokens
-2. Click "Create API token"
-3. Copy token and update `.env.jira` file
+**Generate New Personal Access Token (PAT):**
+1. Go to: `https://confluence.yourcompany.com/plugins/personalaccesstokens/usertokens.action`
+2. Click "Create token"
+3. Copy token and update your `.env` or `.mcp.json` file
 
 ---
 
@@ -334,8 +334,8 @@ ERROR: Failed to fetch current version for page 123456: Page not found
 **Find Correct Page ID:**
 ```
 # From Confluence URL:
-https://company.atlassian.net/wiki/spaces/TEAM/pages/780369923/Page+Title
-                                                        ^^^^^^^^^ This is the page ID
+https://confluence.yourcompany.com/spaces/TEAM/pages/780369923/Page+Title
+                                                  ^^^^^^^^^ This is the page ID
 ```
 
 **Verify Page Exists:**
@@ -509,7 +509,7 @@ print("Storage format saved to: storage_output.html")
 from confluence_auth import get_confluence_client
 
 # Test connection
-client = get_confluence_client(env_file='/path/to/.env.jira')
+client = get_confluence_client(env_file='/path/to/.env.confluence')
 print(f"✅ Connected to: {client.url}")
 
 # Test page access
@@ -548,3 +548,93 @@ Before uploading to Confluence, verify:
 **Confluence Resources:**
 - [Confluence REST API Docs](https://docs.atlassian.com/atlassian-confluence/REST/latest/)
 - [md2cf GitHub](https://github.com/iamjackg/md2cf)
+
+---
+
+## Data Center Specific Issues
+
+### SSL Certificate Error
+
+**Symptom:**
+```
+ERROR: SSL: CERTIFICATE_VERIFY_FAILED
+ERROR: Failed to verify Confluence host certificate
+```
+
+**Cause:** Confluence Data Center often uses self-signed or internally-issued certificates.
+
+**Solution:**
+Scripts handle this with `verify=False` in API requests. For MCP connections:
+1. Configure SSL verification in your environment
+2. Add DC host CA certificate to your trusted store
+3. Or set `NODE_TLS_REJECT_UNAUTHORIZED=0` in MCP environment (not recommended for production)
+
+---
+
+### PAT Not Found
+
+**Symptom:**
+```
+ERROR: CONFLUENCE_API_TOKEN not found
+ERROR: Authentication failed - invalid or missing token
+```
+
+**Cause:** Personal Access Token (PAT) not configured in environment or MCP config.
+
+**Solution:**
+1. Ensure `CONFLUENCE_API_TOKEN` is set in your `.env` file or MCP config
+2. Verify PAT is valid and hasn't expired
+3. Debug with: `python scripts/confluence_api.py discover-pat`
+4. Check MCP configuration in `.mcp.json` for correct env variables
+
+---
+
+### Version Conflict on Update
+
+**Symptom:**
+```
+ERROR: Version conflict
+ERROR: Cannot update - page version mismatch
+```
+
+**Cause:** `confluence_updateContent` requires explicit version number that must be incremented.
+
+**Solution:**
+1. Always fetch current page version first:
+   ```bash
+   page = confluence.getContent(page_id, expand='version')
+   current_version = page['version']['number']
+   ```
+2. Increment version when updating:
+   ```python
+   confluence.updateContent(
+       page_id=page_id,
+       version=current_version + 1,  # ✅ Increment!
+       body=new_content,
+       representation='storage'
+   )
+   ```
+3. The upload script handles this automatically
+
+---
+
+### json Code Block Error
+
+**Symptom:**
+```
+ERROR: Unsupported language 'json'
+Code block appears with error message in Confluence
+```
+
+**Cause:** Confluence Data Center does not support `json` as a code block language (Cloud-only feature).
+
+**Solution:** Use `javascript` instead of `json` for code blocks:
+```xml
+<!-- ❌ Wrong -->
+<ac:parameter ac:name="language">json</ac:parameter>
+
+<!-- ✅ Correct -->
+<ac:parameter ac:name="language">javascript</ac:parameter>
+```
+
+Update storage format content and retry. See `confluence_storage_format.md` for examples.

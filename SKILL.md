@@ -1,11 +1,11 @@
 ---
 name: confluence
-description: Manage Confluence documentation with downloads, uploads, conversions, and diagrams. Use when asked to "download Confluence pages", "upload to Confluence", "convert Wiki Markup", "sync markdown to Confluence", "create Confluence page", or "handle Confluence images".
+description: Manage Confluence Data Center documentation with downloads, uploads, conversions, and diagrams. Use when asked to "download Confluence pages", "upload to Confluence", "convert Wiki Markup", "create Confluence page", or "handle Confluence images".
 ---
 
-# Confluence Management Skill
+# Confluence Data Center Management Skill
 
-Manage Confluence documentation through Claude Code: download pages to Markdown, upload large documents with images, convert between formats, and integrate Mermaid/PlantUML diagrams.
+Manage Confluence Data Center documentation through Claude Code: download pages to Markdown, upload large documents with images, convert between formats, and integrate Mermaid/PlantUML diagrams.
 
 ## Table of Contents
 
@@ -19,11 +19,10 @@ Manage Confluence documentation through Claude Code: download pages to Markdown,
 
 | Task | Tool | Notes |
 |------|------|-------|
-| Read pages | MCP tools | `confluence_get_page`, `confluence_search` |
-| Small text-only uploads (<10KB) | MCP tools | `confluence_create_page`, `confluence_update_page` |
+| Read pages | MCP tools | `confluence_getContent`, `confluence_searchContent` |
+| Small text-only uploads (<10KB) | MCP tools | `confluence_createContent`, `confluence_updateContent` |
 | Large documents (>10KB) | `upload_confluence_v2.py` | REST API, no size limits |
 | Documents with images | `upload_confluence_v2.py` | Handles attachments automatically |
-| Git-to-Confluence sync | mark CLI | Best for CI/CD workflows |
 | Download pages to Markdown | `download_confluence.py` | Converts macros, downloads attachments |
 
 ## MCP Size Limits
@@ -46,11 +45,11 @@ MCP works for reading pages but not for uploading large content.
 
 ### Required
 
-- **Atlassian MCP Server** (`mcp__atlassian-evinova`) with Confluence credentials
+- **Confluence Data Center MCP Server** (`compasify-confluence-dc`) with PAT-based authentication.
+- **npm package**: `@compasify/confluence-dc`
 
 ### Optional
 
-- **mark CLI**: Git-to-Confluence sync (`brew install kovetskiy/mark/mark`)
 - **Mermaid CLI**: Diagram rendering (`npm install -g @mermaid-js/mermaid-cli`)
 
 ## Core Workflows
@@ -86,53 +85,40 @@ See [Image Handling Best Practices](references/image_handling_best_practices.md)
 ### Search Confluence
 
 ```javascript
-mcp__atlassian-evinova__confluence_search({
-  query: 'space = "DEV" AND text ~ "API"',
+confluence_searchContent({
+  cql: 'space = "DEV" AND text ~ "API"',
   limit: 10
 })
 ```
 
 ### Create/Update Pages (Small Documents)
 
+Note: Content format for these tools is Confluence storage format (XML-based), not wiki markup.
+
 ```javascript
 // Create page
-mcp__atlassian-evinova__confluence_create_page({
-  space_key: "DEV",
+confluence_createContent({
+  spaceKey: "DEV",
   title: "API Documentation",
-  content: "h1. Overview\n\nContent here...",
-  content_format: "wiki"
+  content: "<h1>Overview</h1><p>Content here...</p>",
+  type: "page"
 })
 
 // Update page
-mcp__atlassian-evinova__confluence_update_page({
-  page_id: "123456789",
+// CRITICAL: updateContent requires explicit version number (fetch current + increment)
+confluence_updateContent({
+  contentId: "123456789",
   title: "Updated Title",
-  content: "h1. New Content",
-  version_comment: "Updated via Claude Code"
+  content: "<h1>New Content</h1><p>Updated content...</p>",
+  version: 2,
+  versionComment: "Updated via Claude Code"
 })
 ```
 
-### Sync from Git (mark CLI)
-
-Add metadata to Markdown files:
-
-```markdown
-<!-- Space: DEV -->
-<!-- Parent: Documentation -->
-<!-- Title: API Guide -->
-
-# API Guide
-Content...
-```
-
-Sync to Confluence:
-
-```bash
-mark -f documentation.md
-mark --dry-run -f documentation.md  # Preview first
-```
-
-See [mark Tool Guide](references/mark_tool_guide.md) for details.
+### DC-Specific Notes
+- **Authentication**: Uses Personal Access Token (PAT). Ensure `CONFLUENCE_API_TOKEN` is set.
+- **SSL**: If using self-signed certificates, ensure appropriate environment variables are configured to allow the connection.
+- **Code Blocks**: In Confluence Data Center, `json` language is NOT supported in code blocks. Use `javascript` instead.
 
 ### Convert Between Formats
 
@@ -146,7 +132,7 @@ Quick reference:
 | `**bold**` | `*bold*` |
 | `*italic*` | `_italic_` |
 | `` `code` `` | `{{code}}` |
-| `[text](url)` | `[text\|url]` |
+| `[text](url)` | `[text|url]` |
 
 ## Reference Documentation
 
@@ -158,23 +144,22 @@ Detailed guides in the `references/` directory:
 | [Conversion Guide](references/conversion_guide.md) | Markdown to Wiki Markup conversion rules |
 | [Storage Format](references/confluence_storage_format.md) | Confluence XML storage format details |
 | [Image Handling](references/image_handling_best_practices.md) | Workflows for images, Mermaid, PlantUML |
-| [mark Tool Guide](references/mark_tool_guide.md) | Git-to-Confluence sync with mark CLI |
 | [Troubleshooting](references/troubleshooting_guide.md) | Common errors and solutions |
 
 ## Available MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `confluence_search` | Search using CQL or text |
-| `confluence_get_page` | Retrieve page by ID or title |
-| `confluence_create_page` | Create new page |
-| `confluence_update_page` | Update existing page |
-| `confluence_delete_page` | Delete page |
-| `confluence_get_page_children` | Get child pages |
-| `confluence_add_label` | Add label to page |
-| `confluence_get_labels` | Get page labels |
-| `confluence_add_comment` | Add comment to page |
-| `confluence_get_comments` | Get page comments |
+| `confluence_getContent` | Get content by ID |
+| `confluence_searchContent` | Search with CQL |
+| `confluence_createContent` | Create page/blogpost |
+| `confluence_updateContent` | Update content (version REQUIRED) |
+| `confluence_searchSpace` | Search spaces |
+| `confluence_deletePage` | Delete page |
+| `confluence_getPageChildren` | Get child pages |
+| `confluence_getLabels` | Get labels |
+| `confluence_addLabel` | Add label |
+| `confluence_getComments` | Get comments |
 
 ## Utility Scripts
 
@@ -183,9 +168,8 @@ Detailed guides in the `references/` directory:
 | `scripts/upload_confluence_v2.py` | Upload large documents with images |
 | `scripts/download_confluence.py` | Download pages to Markdown |
 | `scripts/convert_markdown_to_wiki.py` | Convert Markdown to Wiki Markup |
-| `scripts/convert_wiki_to_markdown.py` | Convert Wiki Markup to Markdown |
 | `scripts/render_mermaid.py` | Render Mermaid diagrams |
 
 ---
 
-**Version**: 2.1.0 | **Last Updated**: 2025-01-21
+**Version**: 3.0.0 | **Last Updated**: 2026-02-28

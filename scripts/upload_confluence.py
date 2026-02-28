@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Upload Markdown to Confluence
+Upload Markdown to Confluence Data Center
 
 Converts Markdown files to Confluence storage format and uploads via REST API.
 Supports frontmatter-based smart uploads, version management, and Mermaid diagrams.
+Uses Personal Access Token (PAT) for authentication.
 
 Usage:
     # Smart upload (reads from frontmatter)
@@ -34,7 +35,7 @@ import yaml
 try:
     import mistune
     from confluence_auth import get_confluence_client
-    from mermaid_renderer import MermaidConfluenceRenderer
+    from md2cf.confluence_renderer import ConfluenceRenderer
 except ImportError as e:
     print(f"ERROR: Missing dependency: {e}", file=sys.stderr)
     print("Install with: pip install atlassian-python-api md2cf python-dotenv PyYAML mistune", file=sys.stderr)
@@ -97,7 +98,7 @@ def convert_to_storage_format(markdown_content: str, output_dir: Optional[Path] 
     Returns:
         Tuple of (storage_format_html, attachments_list)
     """
-    renderer = MermaidConfluenceRenderer(output_dir=str(output_dir) if output_dir else None)
+    renderer = ConfluenceRenderer()
 
     try:
         # Use mistune 0.8.x API

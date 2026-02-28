@@ -1,4 +1,4 @@
-# Confluence Skill Quick Reference
+# Confluence Skill Quick Reference (Data Center)
 
 ## Common Tasks
 
@@ -38,9 +38,9 @@
 |---------|----------|-------------|
 | H1 | `# Heading` | `h1. Heading` |
 | Bold | `**text**` | `*text*` |
-| Italic | `*text*` | `_text_` |
+| Italic | `*text*` | `_text*` |
 | Code | `` `code` `` | `{{code}}` |
-| Link | `[text](url)` | `[text\|url]` |
+| Link | `[text](url)` | `[text|url]` |
 | Image | `![alt](url)` | `!url!` |
 | Bullet | `- item` | `* item` |
 | Number | `1. item` | `# item` |
@@ -73,23 +73,6 @@ created >= startOfYear() AND
 label = "api"
 ```
 
-## mark CLI Quick Commands
-
-```bash
-# Basic sync
-mark -f file.md
-
-# With credentials
-mark -u email@example.com -p token -f file.md
-
-# Dry run
-mark --dry-run -f file.md
-
-# Add metadata first
-python scripts/generate_mark_metadata.py file.md \
-  --space DEV --title "Page Title" --labels api,docs
-```
-
 ## Python Scripts
 
 ```bash
@@ -98,31 +81,26 @@ python scripts/convert_markdown_to_wiki.py input.md output.wiki
 
 # Render Mermaid diagram
 python scripts/render_mermaid.py diagram.mmd output.png
-
-# Add mark metadata
-python scripts/generate_mark_metadata.py file.md \
-  --space DEV --title "Title"
 ```
 
 ## Available MCP Tools
 
-- `confluence_search` - Search pages with CQL
-- `confluence_get_page` - Get page by ID or title
-- `confluence_create_page` - Create new page
-- `confluence_update_page` - Update existing page
-- `confluence_delete_page` - Delete page
-- `confluence_get_page_children` - Get child pages
-- `confluence_add_label` - Add label to page
-- `confluence_get_labels` - Get page labels
-- `confluence_add_comment` - Add comment
-- `confluence_get_comments` - Get page comments
+- `confluence_getContent` - Get content by ID
+- `confluence_searchContent` - Search with CQL
+- `confluence_createContent` - Create page/blogpost
+- `confluence_updateContent` - Update content (requires version number)
+- `confluence_searchSpace` - Search spaces
+- `confluence_deletePage` - Delete page
+- `confluence_getPageChildren` - Get child pages
+- `confluence_getLabels` - Get labels
+- `confluence_addLabel` - Add label
+- `confluence_getComments` - Get comments (read-only)
 
 ## File Locations
 
 - **Main documentation**: `~/.claude/skills/confluence/SKILL.md`
 - **Wiki Markup guide**: `~/.claude/skills/confluence/references/wiki_markup_guide.md`
 - **Conversion guide**: `~/.claude/skills/confluence/references/conversion_guide.md`
-- **mark tool guide**: `~/.claude/skills/confluence/references/mark_tool_guide.md`
 - **Scripts**: `~/.claude/skills/confluence/scripts/`
 - **Examples**: `~/.claude/skills/confluence/examples/`
 
@@ -135,23 +113,15 @@ python scripts/generate_mark_metadata.py file.md \
 4. Uploads diagrams as attachments
 5. Creates Confluence page
 
-### 2. Sync Git → Confluence
-1. Add mark metadata to Markdown files
-2. Use mark CLI to sync: `mark -f file.md`
-3. Attachments uploaded automatically
-4. Page hierarchy maintained
-
-### 3. Search and Update
+### 2. Search and Update
 1. Search for page with CQL
 2. Get current content
 3. Make changes
-4. Update page with version comment
+4. Update page with version comment (increment version number)
 
 ## Tips
 
-- Always test with `--dry-run` first
 - Use labels consistently for organization
 - Keep diagram source files (.mmd) in Git
 - Review conversions for edge cases
-- Set up CI/CD for automatic syncing
 - Use parent pages for proper hierarchy

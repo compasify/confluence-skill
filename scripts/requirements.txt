@@ -1,12 +1,13 @@
-# Confluence Upload/Download Dependencies
+# Confluence Data Center Upload/Download Dependencies
 
 # Core dependencies for both upload and download
 requests>=2.31.0
 python-dotenv>=1.0.0
 PyYAML>=6.0.1
+urllib3>=2.0.0
 
 # Upload dependencies
-atlassian-python-api>=3.41.0  # Confluence REST API client
+atlassian-python-api>=3.41.0  # Confluence DC REST API client (cloud=False)
 md2cf>=1.0.0                   # Markdown to Confluence storage format
 mistune==0.8.4                 # Markdown parser (md2cf 1.0.x requires 0.8.x)
 

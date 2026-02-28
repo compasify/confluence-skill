@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Confluence Page Downloader - Download and convert Confluence pages to Markdown
+Confluence Data Center Page Downloader - Download and convert Confluence pages to Markdown
+
+Supports Confluence Data Center (DC) with Personal Access Token (PAT) authentication.
+Uses Bearer token auth instead of basic auth, and handles DC URL patterns
+(no /wiki prefix required).
 
 Features:
 - Downloads complete Confluence pages using REST API with pagination
@@ -11,6 +15,7 @@ Features:
 - Creates YAML frontmatter with complete page metadata
 - Retries with exponential backoff for failed downloads
 - HTML debugging mode for troubleshooting transformations
+- Supports self-signed SSL certificates (common in DC environments)
 """
 
 import os
@@ -26,6 +31,7 @@ from datetime import datetime
 from urllib.parse import urljoin, urlparse, quote
 
 import requests
+import urllib3
 import yaml
 from markdownify import markdownify as md
 
@@ -47,16 +53,24 @@ logger = logging.getLogger(__name__)
 class ConfluenceValidator:
     """Validates downloaded content against Confluence source."""
 
-    def __init__(self, confluence_url: str, username: str, api_token: str):
+    def __init__(self, confluence_url: str, token: str):
         self.confluence_url = confluence_url.rstrip('/')
+
+        # DC URL handling: base URL does NOT always have /wiki suffix
+        # Strip /wiki if present — DC uses base URL directly
         if self.confluence_url.endswith('/wiki'):
             self.confluence_url = self.confluence_url[:-5]
 
-        self.api_base = f"{self.confluence_url}/wiki/rest/api"
-        self.web_base = f"{self.confluence_url}/wiki"  # Base URL for web resources (downloads, etc.)
-        self.auth = (username, api_token)
+        self.api_base = f"{self.confluence_url}/rest/api"
+        self.web_base = self.confluence_url  # DC web resources are at base URL (no /wiki)
         self.session = requests.Session()
-        self.session.auth = self.auth
+
+        # DC uses Bearer token (PAT) authentication
+        self.session.headers['Authorization'] = f'Bearer {token}'
+
+        # Handle self-signed SSL certs common in DC environments
+        self.session.verify = False
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def get_page_info(self, page_id: str) -> Dict:
         """Get page metadata from Confluence."""
@@ -128,7 +142,7 @@ class ConfluenceValidator:
                 logger.warning(f"No download URL for attachment: {attachment.get('title')}")
                 return None
 
-            # Construct full URL - use web_base which includes /wiki
+            # Construct full URL - DC uses base URL (no /wiki prefix)
             if download_url.startswith('/'):
                 download_url = self.web_base + download_url
 
@@ -443,13 +457,15 @@ class ConfluenceDownloader:
             # Replace various forms of attachment URLs
             patterns = [
                 # Standard attachment URL
+                re.compile(rf'/download/attachments/\d+/{re.escape(quote(attachment_name))}', re.IGNORECASE),
+                # Also match /wiki/download/ pattern (some DC setups)
                 re.compile(rf'/wiki/download/attachments/\d+/{re.escape(quote(attachment_name))}', re.IGNORECASE),
                 # Thumbnail URL
+                re.compile(rf'/download/thumbnails/\d+/{re.escape(quote(attachment_name))}', re.IGNORECASE),
                 re.compile(rf'/wiki/download/thumbnails/\d+/{re.escape(quote(attachment_name))}', re.IGNORECASE),
                 # Simple filename reference
                 re.compile(rf'(?<=src=")[^"]*{re.escape(attachment_name)}(?=")', re.IGNORECASE),
             ]
-
             for pattern in patterns:
                 html = pattern.sub(str(rel_path), html)
 
@@ -547,8 +563,9 @@ class ConfluenceDownloader:
             attachments: List of attachment metadata
             parent_title: If in a subdirectory, the parent page title for path calculation
         """
-        # Construct full Confluence URL
-        confluence_url = f"{self.validator.web_base}{page_info['_links']['webui']}"
+        # Construct full Confluence URL — DC uses base URL directly (no /wiki prefix)
+        webui_link = page_info['_links']['webui']
+        confluence_url = f"{self.validator.web_base}{webui_link}"
 
         frontmatter = {
             'title': page_info['title'],
@@ -659,7 +676,7 @@ def load_configuration(env_file: Optional[str] = None, output_override: Optional
         output_override: Optional output directory override
 
     Returns:
-        Dict with confluence_url, username, api_token, output_dir
+        Dict with confluence_url, token, output_dir
     """
     try:
         creds = get_confluence_credentials(env_file=env_file)
@@ -668,19 +685,16 @@ def load_configuration(env_file: Optional[str] = None, output_override: Optional
         logger.info("\nCreate one of these files with credentials:")
         logger.info("  .env, .env.confluence, .env.jira, .env.atlassian")
         logger.info("\nRequired variables:")
-        logger.info("  CONFLUENCE_URL=https://yourcompany.atlassian.net")
-        logger.info("  CONFLUENCE_USERNAME=your.email@company.com")
-        logger.info("  CONFLUENCE_API_TOKEN=your_api_token")
-        logger.info("\nGet API Token: https://id.atlassian.com/manage-profile/security/api-tokens")
+        logger.info("  CONFLUENCE_HOST=https://confluence.yourcompany.com")
+        logger.info("  CONFLUENCE_PAT or CONFLUENCE_API_TOKEN=your_personal_access_token")
+        logger.info("\nGet PAT: Confluence > Profile > Personal Access Tokens")
         sys.exit(1)
 
     return {
         'confluence_url': creds['url'],
-        'username': creds['username'],
         'api_token': creds['token'],
         'output_dir': output_override or os.getenv('CONFLUENCE_OUTPUT_DIR', 'confluence_docs')
     }
-
 
 def main():
     """Main execution function."""
@@ -729,7 +743,7 @@ Examples:
     output_dir.mkdir(exist_ok=True)
 
     # Initialize validator and downloader
-    validator = ConfluenceValidator(config['confluence_url'], config['username'], config['api_token'])
+    validator = ConfluenceValidator(config['confluence_url'], config['api_token'])
     downloader = ConfluenceDownloader(validator, output_dir, save_html=args.save_html, download_children=args.download_children)
 
     if args.save_html:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Upload Markdown to Confluence (v2 - Improved)
+Upload Markdown to Confluence Data Center (v2 - Improved)
 
 CRITICAL: This version fixes major issues from v1:
 - ✅ Uses base ConfluenceRenderer (doesn't break regular images)
@@ -10,6 +10,8 @@ CRITICAL: This version fixes major issues from v1:
 - ✅ Proper error handling for API responses
 
 IMPORTANT: DO NOT USE MCP FOR CONFLUENCE PAGE UPLOADS - size limits apply!
+
+Authentication: Uses Confluence Data Center Personal Access Token (PAT) via confluence_auth module
 
 Usage:
     # Update existing page with images
@@ -23,6 +25,10 @@ Usage:
 
 Requirements:
     pip install atlassian-python-api md2cf python-dotenv PyYAML mistune
+
+Confluence Data Center Authentication:
+    - Credentials discovered from: environment variables → .mcp.json → .env file
+    - Requires: CONFLUENCE_HOST and CONFLUENCE_API_TOKEN
 """
 
 import sys
@@ -364,14 +370,12 @@ Examples:
   # Dry-run preview
   %(prog)s document.md --id 780369923 --dry-run
 
-  # Use custom credentials file
-  %(prog)s document.md --id 780369923 --env-file /path/to/.env.jira
-
 IMPORTANT:
   - For Mermaid/PlantUML diagrams: Convert to PNG/SVG FIRST, then reference
     in markdown using: ![alt](path/to/diagram.png)
   - DO NOT use MCP for page uploads - use this script (no size limits)
   - Images are automatically detected from markdown image syntax
+  - Requires Confluence Data Center PAT (set CONFLUENCE_HOST and CONFLUENCE_API_TOKEN)
         """
     )
 
